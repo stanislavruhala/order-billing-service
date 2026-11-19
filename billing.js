@@ -1,24 +1,21 @@
-// Дефект 1 (Common Coupling): глобальна змінна стану
-let GLOBAL_TAX_RATE = 0.20;
-
-// Дефект 2 (Stamp Coupling): функція отримує повний об'єкт користувача замість рядка city
-function calculateDeliveryCost(customerProfile, weightKg) {
-    const baseRate = customerProfile.city === "Ivano-Frankivsk" ? 50.0 : 110.0;
+// Усунуто Stamp Coupling: приймаються лише примітивні параметри city та weightKg
+function calculateDeliveryCost(city, weightKg) {
+    const baseRate = city === "Ivano-Frankivsk" ? 50.0 : 110.0;
     return baseRate + (weightKg * 12.0);
 }
 
-// Дефект 3 (Control Coupling): числовий прапорець modeFlag перемикає бізнес-логіку всередині
-function processInvoice(amount, customerProfile, weightKg, modeFlag) {
-    if (modeFlag === 1) {
-        const delivery = calculateDeliveryCost(customerProfile, weightKg);
-        const total = (amount * (1 + GLOBAL_TAX_RATE)) + delivery;
-        return { status: "PROCESSED", total: Number(total.toFixed(2)) };
-    } else if (modeFlag === 2) {
-        GLOBAL_TAX_RATE = 0.0; // Небезпечна мутація глобальної змінної
-        const total = amount + calculateDeliveryCost(customerProfile, weightKg);
-        return { status: "TAX_EXEMPT", total: Number(total.toFixed(2)) };
-    }
-    return { status: "CANCELLED", total: 0.0 };
+// Усунуто Common Coupling (taxRate передається явно) та Control Coupling (окрема функція)
+function processStandardInvoice(amount, city, weightKg, taxRate = 0.20) {
+    const delivery = calculateDeliveryCost(city, weightKg);
+    const total = (amount * (1 + taxRate)) + delivery;
+    return { status: "PROCESSED", total: Number(total.toFixed(2)) };
 }
 
-module.exports = { calculateDeliveryCost, processInvoice };
+// Окрема функція для замовлень без податку
+function processTaxExemptInvoice(amount, city, weightKg) {
+    const delivery = calculateDeliveryCost(city, weightKg);
+    const total = amount + delivery;
+    return { status: "TAX_EXEMPT", total: Number(total.toFixed(2)) };
+}
+
+module.exports = { calculateDeliveryCost, processStandardInvoice, processTaxExemptInvoice };
